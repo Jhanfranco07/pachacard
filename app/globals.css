@@ -80,3 +80,4 @@ textarea.input {
 .animate-fadeInUp {
   animation: fadeInUp .35s ease-out both;
 }
+:root { --brand: #911a1e; } /* ejemplo */

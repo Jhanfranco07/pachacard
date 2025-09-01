@@ -65,6 +65,41 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(user)/app/discounts/[id]/page.js"
+    ],
+    "/admin/discounts/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/discounts/[id]/page.js"
+    ],
+    "/admin/users/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/users/[id]/page.js"
+    ],
+    "/admin/businesses/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/businesses/[id]/page.js"
+    ],
+    "/admin/users/new/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/users/new/page.js"
+    ],
+    "/admin/businesses/new/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/businesses/new/page.js"
+    ],
+    "/admin/discounts/new/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/discounts/new/page.js"
+    ],
+    "/redeem/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/redeem/page.js"
     ]
   }
 }

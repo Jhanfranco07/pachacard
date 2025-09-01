@@ -1,4 +1,4 @@
-// app/_components/PachaHeader.tsx (ajusta la ruta según tu proyecto)
+// app/_components/PachaHeader.tsx
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -9,13 +9,16 @@ export default function PachaHeader() {
   const pathname = usePathname() || "/";
   const [open, setOpen] = useState(false);
 
-  const isLoginOrLogout = pathname === "/login" || pathname === "/logout";
-  const isRedeem = pathname.startsWith("/redeem");
-  const isAdmin = pathname.startsWith("/admin");
+  // Rutas donde NO debe existir NINGÚN header
+  const hideAll =
+    pathname === "/login" ||
+    pathname === "/logout" ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/redeem");
 
-  // En canje o admin ocultamos TODO el header de usuario.
-  if (isRedeem || isAdmin) return null;
+  if (hideAll) return null;
 
+  // helper para links (marca activo)
   const link = (href: string, label: string) => {
     const active =
       href === "/app"
@@ -37,39 +40,12 @@ export default function PachaHeader() {
     );
   };
 
-  // Header solo con marca (sin navegación) para /login y /logout
-  if (isLoginOrLogout) {
-    return (
-      <header className="sticky top-0 z-40 bg-[var(--brand)] text-white shadow-sm">
-        <div className="container-app h-14 flex items-center justify-between gap-4">
-          {/* Marca NO clickeable */}
-          <div className="flex items-center gap-3 select-none cursor-default">
-            <img
-              src="/pachacard.png"
-              alt=""
-              className="hidden sm:block h-7 w-auto"
-              onError={(e) => ((e.currentTarget.style.display = "none"))}
-            />
-            <div className="leading-none">
-              <div className="font-semibold tracking-wide">PACHACARD</div>
-              <div className="text-[11px] opacity-80">
-                Municipalidad de Pachacámac
-              </div>
-            </div>
-          </div>
-          {/* sin navegación aquí */}
-        </div>
-      </header>
-    );
-  }
-
   async function doSignOut() {
-    // Opcional pero ayuda a evitar MissingCSRF al salir
+    // ayuda a evitar el error MissingCSRF en algunos entornos
     await fetch("/api/auth/csrf", { cache: "no-store" }).catch(() => {});
-    signOut({ callbackUrl: "/login" });
+    await signOut({ callbackUrl: "/login" });
   }
 
-  // Header completo
   return (
     <header className="sticky top-0 z-40 bg-[var(--brand)] text-white shadow-sm">
       <div className="container-app h-14 flex items-center justify-between gap-4">
@@ -83,9 +59,7 @@ export default function PachaHeader() {
           />
           <div className="leading-none">
             <div className="font-semibold tracking-wide">PACHACARD</div>
-            <div className="text-[11px] opacity-80">
-              Municipalidad de Pachacámac
-            </div>
+            <div className="text-[11px] opacity-80">Municipalidad de Pachacámac</div>
           </div>
         </a>
 
@@ -102,7 +76,7 @@ export default function PachaHeader() {
           </button>
         </nav>
 
-        {/* Botón mobile */}
+        {/* Botón mobile (abre drawer) */}
         <button
           className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-md hover:bg-white/10"
           aria-label="Abrir menú"
