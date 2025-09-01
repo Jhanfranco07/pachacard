@@ -1,0 +1,9 @@
+Patch para Admin/Businesses:
+- Agrega "app/admin/businesses/ui.tsx" (BusinessForm con preview de logo).
+- Reescribe "app/admin/businesses/page.tsx" para no importar "../ui" por error.
+- Hace que "new/page.tsx" y "[id]/page.tsx" usen el mismo formulario.
+
+Cómo aplicar:
+1) Extrae el ZIP en la raíz del proyecto, respeta rutas.
+2) Reinicia el server: Ctrl+C y luego "pnpm dev" o vuelve a hacer build.
+3) En Admin -> Negocios verás el listado, y al crear/editar podrás pegar la URL del logo.

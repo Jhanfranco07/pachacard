@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  tier         String
+  status       String       @default("ACTIVE")
+  role         String       @default("USER")
+  tokenVersion Int          @default(1)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  redemptions  Redemption[]
+}
+
+model Business {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  ruc       String?
+  address   String?
+  contact   String?
+  status    String   @default("ACTIVE")
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  discounts   Discount[] // <-- relación inversa 1:N
+  redemptions Redemption[]
+}
+
+model Discount {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  title        String
+  description  String
+  images       String?
+  tierBasic    Boolean  @default(false)
+  tierNormal   Boolean  @default(false)
+  tierPremium  Boolean  @default(false)
+  startAt      DateTime
+  endAt        DateTime
+  limitPerUser Int?
+  limitTotal   Int?
+  usedTotal    Int      @default(0)
+  terms        String?
+  status       String   @default("DRAFT")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  businessId String? // <-- FK opcional
+  business   Business? @relation(fields: [businessId], references: [id])
+
+  redemptions Redemption[]
+}
+
+model Redemption {
+  id         String   @id @default(cuid())
+  userId     String
+  discountId String
+  businessId String
+  redeemedAt DateTime @default(now())
+  channel    String   @default("qr")
+  meta       String?
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discount Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([discountId])
+  @@index([businessId])
+}

@@ -1,0 +1,1 @@
+const W=Number(process.env.RL_WINDOW_MS||30000); const M=Number(process.env.RL_MAX_HITS||10); const b=new Map<string,{h:number;ts:number}>(); export function rateLimit(k:string){const n=Date.now(); const v=b.get(k)||{h:0,ts:n}; if(n-v.ts>W){v.h=0;v.ts=n;} v.h++; b.set(k,v); return v.h<=M;}
