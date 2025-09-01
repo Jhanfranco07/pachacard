@@ -1,13 +1,13 @@
 // app/admin/discounts/page.tsx
 import { prisma } from "@/lib/prisma";
-import type { Discount } from "@prisma/client";
 
-export default async function Page() {
-  const items: (Discount & { business: { name: string | null } | null })[] =
-    await prisma.discount.findMany({
-      orderBy: { startAt: "desc" },
-      include: { business: { select: { name: true } } },
-    });
+export const dynamic = "force-dynamic";
+
+export default async function AdminDiscountsList() {
+  const items = await prisma.discount.findMany({
+    include: { business: true },
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <div className="space-y-3">
@@ -32,6 +32,7 @@ export default async function Page() {
                   {d.code} · {d.business?.name ?? "—"}
                 </div>
               </div>
+              <span className="badge">{d.status}</span>
             </div>
           </a>
         ))}

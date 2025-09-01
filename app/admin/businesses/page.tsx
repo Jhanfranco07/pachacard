@@ -2,6 +2,8 @@
 import { prisma } from "@/lib/prisma";
 import type { Business } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const items: Business[] = await prisma.business.findMany({
     orderBy: { name: "asc" },

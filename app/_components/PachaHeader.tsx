@@ -1,7 +1,9 @@
+// app/_components/PachaHeader.tsx (ajusta la ruta según tu proyecto)
 "use client";
 
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 
 export default function PachaHeader() {
   const pathname = usePathname() || "/";
@@ -9,9 +11,10 @@ export default function PachaHeader() {
 
   const isLoginOrLogout = pathname === "/login" || pathname === "/logout";
   const isRedeem = pathname.startsWith("/redeem");
+  const isAdmin = pathname.startsWith("/admin");
 
-  // En canje (redeem) ocultamos TODO el header.
-  if (isRedeem) return null;
+  // En canje o admin ocultamos TODO el header de usuario.
+  if (isRedeem || isAdmin) return null;
 
   const link = (href: string, label: string) => {
     const active =
@@ -60,6 +63,12 @@ export default function PachaHeader() {
     );
   }
 
+  async function doSignOut() {
+    // Opcional pero ayuda a evitar MissingCSRF al salir
+    await fetch("/api/auth/csrf", { cache: "no-store" }).catch(() => {});
+    signOut({ callbackUrl: "/login" });
+  }
+
   // Header completo
   return (
     <header className="sticky top-0 z-40 bg-[var(--brand)] text-white shadow-sm">
@@ -85,15 +94,12 @@ export default function PachaHeader() {
           {link("/app", "Mis descuentos")}
           {link("/app/me", "Mi información (QR)")}
           {link("/app/history", "Historial")}
-          <form action="/api/auth/signout" method="post">
-            <input type="hidden" name="callbackUrl" value="/login" />
-            <button
-              type="submit"
-              className="px-3 py-2 rounded-md text-sm text-white/90 hover:bg-white/10 hover:text-white transition"
-            >
-              Salir
-            </button>
-          </form>
+          <button
+            onClick={doSignOut}
+            className="px-3 py-2 rounded-md text-sm text-white/90 hover:bg-white/10 hover:text-white transition"
+          >
+            Salir
+          </button>
         </nav>
 
         {/* Botón mobile */}
@@ -118,19 +124,15 @@ export default function PachaHeader() {
             {link("/app", "Mis descuentos")}
             {link("/app/me", "Mi información (QR)")}
             {link("/app/history", "Historial")}
-            <form
-              action="/api/auth/signout"
-              method="post"
-              onSubmit={() => setOpen(false)}
+            <button
+              onClick={() => {
+                setOpen(false);
+                doSignOut();
+              }}
+              className="px-3 py-2 rounded-md text-sm text-white/90 hover:bg-white/10 hover:text-white transition text-left"
             >
-              <input type="hidden" name="callbackUrl" value="/login" />
-              <button
-                type="submit"
-                className="px-3 py-2 rounded-md text-sm text-white/90 hover:bg-white/10 hover:text-white transition"
-              >
-                Salir
-              </button>
-            </form>
+              Salir
+            </button>
           </div>
         </div>
       )}

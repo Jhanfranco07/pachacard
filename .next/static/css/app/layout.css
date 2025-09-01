@@ -502,6 +502,9 @@ video {
 [hidden]:where(:not([hidden="until-found"])) {
   display: none;
 }
+.pointer-events-none {
+  pointer-events: none;
+}
 .fixed {
   position: fixed;
 }
@@ -574,6 +577,9 @@ video {
 }
 .mb-6 {
   margin-bottom: 1.5rem;
+}
+.ml-1 {
+  margin-left: 0.25rem;
 }
 .ml-2 {
   margin-left: 0.5rem;

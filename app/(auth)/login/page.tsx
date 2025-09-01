@@ -9,8 +9,12 @@ import { useState } from "react";
 function Eye(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" />
+      <path
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z"
+      />
       <circle cx="12" cy="12" r="3" strokeWidth="2" />
     </svg>
   );
@@ -18,8 +22,12 @@ function Eye(props: React.SVGProps<SVGSVGElement>) {
 function EyeOff(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        d="M3 3l18 18M10.585 10.585a3 3 0 104.243 4.243M9.88 4.77A8.968 8.968 0 0112 4c4.477 0 8.268 2.943 9.542 7a9.956 9.956 0 01-3.143 4.5M6.61 6.61A9.956 9.956 0 004.458 12c1.274 4.057 5.065 7 9.542 7 1.287 0 2.522-.233 3.656-.66" />
+      <path
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 3l18 18M10.585 10.585a3 3 0 104.243 4.243M9.88 4.77A8.968 8.968 0 0112 4c4.477 0 8.268 2.943 9.542 7a9.956 9.956 0 01-3.143 4.5M6.61 6.61A9.956 9.956 0 004.458 12c1.274 4.057 5.065 7 9.542 7 1.287 0 2.522-.233 3.656-.66"
+      />
     </svg>
   );
 }
@@ -27,7 +35,7 @@ function EyeOff(props: React.SVGProps<SVGSVGElement>) {
 export default function LoginPage() {
   const search = useSearchParams();
   const errParam = search?.get("error");
-  // Ocultar MissingCSRF/SessionRequired para no asustar cuando vienes de "Salir"
+  // Ocultamos errores esperables (p.ej., al salir)
   const shouldShowError =
     errParam && errParam !== "MissingCSRF" && errParam !== "SessionRequired";
 
@@ -39,12 +47,19 @@ export default function LoginPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    await signIn("credentials", {
-      email,
-      password,
-      redirect: true,
-      callbackUrl: "/",
-    });
+    try {
+      // 👇 fuerza a que NextAuth emita y fije el cookie del CSRF para este host
+      await fetch("/api/auth/csrf", { cache: "no-store" });
+
+      await signIn("credentials", {
+        email,
+        password,
+        redirect: true,
+        callbackUrl: "/", // tu middleware ya decide /app o /admin
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -89,13 +104,16 @@ export default function LoginPage() {
 
               {shouldShowError && (
                 <div className="mb-5 rounded-lg border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm text-rose-700">
-                  No pudimos iniciar sesión. Verifica tus datos e inténtalo otra vez.
+                  No pudimos iniciar sesión. Verifica tus datos e inténtalo otra
+                  vez.
                 </div>
               )}
 
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-700">Email</label>
+                  <label className="text-sm font-medium text-slate-700">
+                    Email
+                  </label>
                   <input
                     type="email"
                     autoComplete="username"
@@ -114,7 +132,9 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-700">Password</label>
+                  <label className="text-sm font-medium text-slate-700">
+                    Password
+                  </label>
                   <div className="relative">
                     <input
                       type={show ? "text" : "password"}
@@ -164,11 +184,13 @@ export default function LoginPage() {
 
               {/* Ayuda elegante */}
               <div className="mt-6 rounded-lg border bg-slate-50 px-4 py-3 text-[13px] text-slate-600">
-                <div className="font-medium text-slate-700 mb-1.5">¿Necesitas ayuda?</div>
+                <div className="font-medium text-slate-700 mb-1.5">
+                  ¿Necesitas ayuda?
+                </div>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>
-                    Tu contraseña será entregada por la Municipalidad al momento de
-                    recibir tu tarjeta <b>PACHACARD</b>.
+                    Tu contraseña será entregada por la Municipalidad al momento
+                    de recibir tu tarjeta <b>PACHACARD</b>.
                   </li>
                   <li>
                     Si la olvidaste, comunícate con el servicio de atención para

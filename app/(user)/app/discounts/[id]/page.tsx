@@ -21,7 +21,7 @@ export default async function DiscountDetail({
   });
   if (!d) return notFound();
 
-  // ⚠️ Aseguramos el ID del usuario desde BD (no confiamos en session.user.id)
+  //  Aseguramos el ID del usuario desde BD (no confiamos en session.user.id)
   let mine = 0;
   if (session?.user?.email) {
     const me = await prisma.user.findUnique({

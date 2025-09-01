@@ -1,11 +1,10 @@
 {
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(user)/app/page": "app/(user)/app/page.js",
+  "/(user)/app/me/page": "app/(user)/app/me/page.js",
+  "/(user)/app/discounts/[id]/page": "app/(user)/app/discounts/[id]/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/page": "app/page.js",
   "/admin/page": "app/admin/page.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/admin/businesses/page": "app/admin/businesses/page.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/admin/businesses/[id]/page": "app/admin/businesses/[id]/page.js",
-  "/(user)/app/me/page": "app/(user)/app/me/page.js",
-  "/(user)/app/page": "app/(user)/app/page.js",
-  "/(user)/app/history/page": "app/(user)/app/history/page.js"
+  "/admin/businesses/page": "app/admin/businesses/page.js"
 }
