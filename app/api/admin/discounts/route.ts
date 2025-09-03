@@ -13,7 +13,6 @@ function toNumOrNull(v: any) {
 }
 
 export async function POST(req: Request) {
-  // ⚠️ Guard de admin (si ya tienes middleware que lo haga, puedes quitar esto)
   const session = await auth();
   if (!session?.user || (session as any).role !== "ADMIN") {
     return NextResponse.json({ ok: false, message: "No autorizado" }, { status: 403 });
@@ -22,14 +21,10 @@ export async function POST(req: Request) {
   const b = await req.json();
 
   const code = String(b.code ?? "").trim().toUpperCase();
-  if (!code) {
-    return NextResponse.json({ ok: false, message: "El código es requerido." }, { status: 400 });
-  }
+  if (!code) return NextResponse.json({ ok: false, message: "El código es requerido." }, { status: 400 });
 
   const title = String(b.title ?? "").trim();
-  if (!title) {
-    return NextResponse.json({ ok: false, message: "El título es requerido." }, { status: 400 });
-  }
+  if (!title) return NextResponse.json({ ok: false, message: "El título es requerido." }, { status: 400 });
 
   const status = String(b.status ?? "DRAFT").trim().toUpperCase();
   const allowedStatus = new Set(["DRAFT", "PUBLISHED", "ARCHIVED"]);
@@ -57,35 +52,69 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, message: "La fecha de inicio no puede ser mayor que la de fin." }, { status: 400 });
   }
 
+  // Acepta b.images o b.imageUrl (URL o base64); guarda en Discount.images (string | null)
+  const images: string | null = (b.images ?? b.imageUrl ?? "").toString().trim() || null;
+
+  // Validación opcional de negocio
+  let businessConnect: Prisma.DiscountCreateInput["business"] | undefined;
   let businessId: string | null = null;
   if (b.businessId) {
-    const biz = await prisma.business.findUnique({ where: { id: String(b.businessId) } });
-    if (!biz) {
-      return NextResponse.json({ ok: false, message: "El negocio seleccionado no existe." }, { status: 400 });
-    }
+    const biz = await prisma.business.findUnique({
+      where: { id: String(b.businessId) },
+      select: { id: true },
+    });
+    if (!biz) return NextResponse.json({ ok: false, message: "El negocio seleccionado no existe." }, { status: 400 });
     businessId = biz.id;
+    businessConnect = { connect: { id: biz.id } };
   }
 
-  const data = {
-    code,
-    title,
-    description: String(b.description ?? ""),
-    status,
-    tierBasic: tb,
-    tierNormal: tn,
-    tierPremium: tp,
-    startAt,
-    endAt,
-    limitPerUser: toNumOrNull(b.limitPerUser),
-    limitTotal: toNumOrNull(b.limitTotal),
-    businessId, // 1→N opcional
-  };
+  const categoryIds: string[] = Array.isArray(b.categoryIds) ? b.categoryIds : [];
 
   try {
-    const created = await prisma.discount.create({ data });
+    const created = await prisma.$transaction(async (tx) => {
+      // Crea el descuento
+      const disc = await tx.discount.create({
+        data: {
+          code,
+          title,
+          description: String(b.description ?? ""),
+          status,
+          tierBasic: tb,
+          tierNormal: tn,
+          tierPremium: tp,
+          startAt,
+          endAt,
+          limitPerUser: toNumOrNull(b.limitPerUser),
+          limitTotal: toNumOrNull(b.limitTotal),
+          images, // <- guardamos la imagen/URL aquí
+          ...(businessConnect ? { business: businessConnect } : {}),
+        },
+      });
+
+      // Relación N:M Descuento-Categorías
+      if (categoryIds.length) {
+        await tx.discountCategory.createMany({
+          data: categoryIds.map((categoryId) => ({ discountId: disc.id, categoryId })),
+          // NOTA: en SQLite skipDuplicates no está soportado; por eso no lo usamos
+        });
+
+        // Si el descuento tiene negocio, "sincroniza" también BusinessCategory
+        if (businessId) {
+          for (const categoryId of categoryIds) {
+            await tx.businessCategory.upsert({
+              where: { businessId_categoryId: { businessId, categoryId } },
+              update: {},
+              create: { businessId, categoryId },
+            });
+          }
+        }
+      }
+
+      return disc;
+    });
+
     return NextResponse.json({ ok: true, id: created.id });
   } catch (e: any) {
-    // Unicidad de code
     if ((e as Prisma.PrismaClientKnownRequestError)?.code === "P2002") {
       return NextResponse.json({ ok: false, message: "El código ya existe." }, { status: 409 });
     }

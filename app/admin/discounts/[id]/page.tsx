@@ -1,4 +1,3 @@
-// app/admin/discounts/[id]/page.tsx
 import { prisma } from "@/lib/prisma";
 import DiscountForm from "../ui";
 
@@ -9,12 +8,18 @@ export default async function EditDiscountPage({
 }: {
   params: { id: string };
 }) {
-  const [item, businesses] = await Promise.all([
+  const [item, businesses, categories] = await Promise.all([
     prisma.discount.findUnique({
       where: { id: params.id },
+      // Traemos solo los IDs de categorías para preseleccionar los checkboxes
+      include: { categories: { select: { categoryId: true } } },
     }),
     prisma.business.findMany({
       select: { id: true, name: true, code: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.category.findMany({
+      select: { id: true, name: true, icon: true },
       orderBy: { name: "asc" },
     }),
   ]);
@@ -24,5 +29,11 @@ export default async function EditDiscountPage({
   }
 
   // Form con datos (editar)
-  return <DiscountForm item={item} businesses={businesses} />;
+  return (
+    <DiscountForm
+      item={item as any}
+      businesses={businesses}
+      categories={categories}
+    />
+  );
 }

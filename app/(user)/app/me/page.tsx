@@ -147,8 +147,6 @@ export default async function MePage() {
           </div>
         </div>
       </div>
-
-      <div className="text-xs text-slate-500">© {year} Municipalidad de Pachacámac · PACHACARD</div>
     </div>
   );
 }

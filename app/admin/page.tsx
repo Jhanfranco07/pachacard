@@ -1,11 +1,9 @@
 // app/admin/page.tsx  (Server Component)
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { unstable_noStore as noStore } from "next/cache";
 
-// Si ya obtienes estos contadores desde tu DB, reemplaza aquí:
-const usersCount = 5;
-const businessesCount = 5;
-const discountsCount = 4;
-const redemptionsCount = 27;
+export const dynamic = "force-dynamic";
 
 function StatCard({
   label,
@@ -54,10 +52,21 @@ function ActionChip({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
-export default function AdminHome() {
+export default async function AdminHome() {
+  // No cache (cada request recuenta en la BD)
+  noStore();
+
+  // Lee los conteos reales desde la BD
+  const [usersCount, businessesCount, discountsCount, redemptionsCount] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.business.count(),
+      prisma.discount.count(),
+      prisma.redemption.count(),
+    ]);
+
   return (
     <main className="min-h-[calc(100vh-56px)] bg-slate-50">
-      {/* contenedor responsivo y evita overflows horizontales */}
       <div className="container-app mx-auto max-w-6xl px-4 sm:px-6 py-6 md:py-8 overflow-x-hidden">
         <header className="mb-4">
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
@@ -73,7 +82,7 @@ export default function AdminHome() {
           <StatCard label="Canjes" value={redemptionsCount} href="/admin/redemptions" />
         </section>
 
-        {/* acciones rápidas: envuelve y no se sale del marco */}
+        {/* acciones rápidas */}
         <section className="mt-6 flex flex-wrap gap-3">
           <ActionChip href="/admin/businesses">Negocios</ActionChip>
           <ActionChip href="/admin/discounts">Descuentos</ActionChip>

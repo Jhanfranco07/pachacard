@@ -1,23 +1,109 @@
-import { prisma } from "@/lib/prisma"; import bcrypt from "bcryptjs";
-async function main(){
-  const users=[
-    {email:"basic@demo.local", name:"Basic", tier:"BASIC", role:"USER", pass:"basic123"},
-    {email:"normal@demo.local", name:"Normal", tier:"NORMAL", role:"USER", pass:"normal123"},
-    {email:"premium@demo.local", name:"Premium", tier:"PREMIUM", role:"USER", pass:"premium123"},
-    {email:"admin@demo.local", name:"Admin", tier:"PREMIUM", role:"ADMIN", pass:"admin123"}
+// prisma/seed.ts
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+
+/* 1) Usuarios (upsert) */
+async function seedUsers() {
+  const users = [
+    { email: "basic@demo.local",   name: "Basic",   tier: "BASIC",   role: "USER",  pass: "basic123" },
+    { email: "normal@demo.local",  name: "Normal",  tier: "NORMAL",  role: "USER",  pass: "normal123" },
+    { email: "premium@demo.local", name: "Premium", tier: "PREMIUM", role: "USER",  pass: "premium123" },
+    { email: "admin@demo.local",   name: "Admin",   tier: "PREMIUM", role: "ADMIN", pass: "admin123" },
   ];
-  for(const u of users){ const hash=await bcrypt.hash(u.pass,10);
-    await prisma.user.upsert({ where:{email:u.email}, update:{passwordHash:hash,tier:u.tier,role:u.role,status:"ACTIVE"}, create:{email:u.email,name:u.name,passwordHash:hash,tier:u.tier,role:u.role,status:"ACTIVE"} });
+
+  for (const u of users) {
+    const passwordHash = await bcrypt.hash(u.pass, 10);
+    await prisma.user.upsert({
+      where: { email: u.email.toLowerCase() },
+      // 👉 NO resetea contraseñas al reseed (comenta la línea si SÍ quieres que se reseteen):
+      update: {
+        name: u.name,
+        // passwordHash, // <- descomenta si quieres forzar password en cada seed
+        tier: u.tier,
+        role: u.role,
+        status: "ACTIVE",
+      },
+      create: {
+        email: u.email.toLowerCase(),
+        name: u.name,
+        passwordHash,
+        tier: u.tier,
+        role: u.role,
+        status: "ACTIVE",
+      },
+    });
   }
-  const biz=[{code:"RESTO",name:"Resto Demo"},{code:"CAFE",name:"Café Central"},{code:"GYM",name:"Gimnasio Strong"}];
-  for(const b of biz){ await prisma.business.upsert({ where:{code:b.code}, update:{name:b.name,status:"ACTIVE"}, create:{code:b.code,name:b.name,status:"ACTIVE"} }); }
-  const now=new Date(); const end=new Date(now.getTime()+1000*60*60*24*30);
-  const discounts=[
-    {code:"RESTO10",title:"10% en resto",description:"En todos los platos",tierBasic:true,startAt:now,endAt:end,status:"PUBLISHED"},
-    {code:"CAFE15",title:"15% en café",description:"Bebidas calientes",tierNormal:true,startAt:now,endAt:end,status:"PUBLISHED"},
-    {code:"GYM20",title:"20% en membresía",description:"Primera inscripción",tierPremium:true,startAt:now,endAt:end,status:"PUBLISHED"}
-  ];
-  for(const d of discounts){ await prisma.discount.upsert({ where:{code:d.code}, update:d as any, create:{...d} as any }); }
-  console.log("Seed listo");
+  console.log("✅ Usuarios listos");
 }
-main().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);});
+
+/* 2) Categorías (upsert) */
+/* 2) Categorías (upsert) */
+async function seedCategories() {
+  const categories = [
+    { slug: "belleza",           name: "Belleza",           icon: "/icons/cats/belleza.png" },
+    { slug: "entretenimiento",   name: "Entretenimiento",   icon: "/icons/cats/entretenimiento.png" },
+    { slug: "viajes-y-turismo",  name: "Viajes y turismo",  icon: "/icons/cats/viajes.png" },
+    { slug: "gastronomia",       name: "Gastronomía",       icon: "/icons/cats/gastronomia.png" },
+    { slug: "productos",         name: "Productos",         icon: "/icons/cats/productos.png" },
+    { slug: "bienestar-y-salud", name: "Bienestar y salud", icon: "/icons/cats/salud.png" },
+    { slug: "servicios",         name: "Servicios",         icon: "/icons/cats/servicios.png" },
+    // agrega más categorías aquí si quieres
+  ];
+
+  for (const c of categories) {
+    await prisma.category.upsert({
+      where: { slug: c.slug },
+      update: { name: c.name, icon: c.icon },
+      create: c,
+    });
+  }
+
+  console.log("Seed de categorías listo ✅");
+}
+
+
+/* Helper: enlaza descuento↔categoría (tabla puente) */
+async function attach(code: string, slug: string) {
+  const disc = await prisma.discount.findUnique({
+    where: { code },
+    select: { id: true },
+  });
+  const cat = await prisma.category.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!disc || !cat) {
+    console.log(`⚠️ Saltando vínculo: no existe ${!disc ? "descuento" : "categoría"} (${code} -> ${slug})`);
+    return;
+  }
+  await prisma.discountCategory.upsert({
+    where: { discountId_categoryId: { discountId: disc.id, categoryId: cat.id } },
+    update: {},
+    create: { discountId: disc.id, categoryId: cat.id },
+  });
+}
+
+/* 3) Vínculos descuento↔categoría */
+async function seedLinks() {
+  // Ajusta estos códigos/slug a tus datos reales
+  await attach("RESTO10", "gastronomia");
+  await attach("CAFE15",  "gastronomia");
+  await attach("GYM20",   "bienestar-y-salud");
+  console.log("✅ Vínculos descuento↔categoría listos");
+}
+
+async function main() {
+  await seedUsers();
+  await seedCategories();
+  await seedLinks();
+  console.log("🌱 Seed completado");
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

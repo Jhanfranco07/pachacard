@@ -81,3 +81,16 @@ textarea.input {
   animation: fadeInUp .35s ease-out both;
 }
 :root { --brand: #911a1e; } /* ejemplo */
+/* Oculta scrollbar horizontal de las píldoras en navegadores comunes */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;   /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* Paleta básica si aún no la tienes */
+:root {
+  --brand: #8f1b1b; /* rojo institucional */
+}

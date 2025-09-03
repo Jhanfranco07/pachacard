@@ -77,8 +77,9 @@ export default async function DiscountDetail({
       : null;
 
   // Imagen
-  const src = d.business?.imageUrl ?? "";
-  const isExternal = /^https?:\/\//i.test(src);
+    const fromDiscount = Array.isArray(d.images) ? d.images[0] : d.images;
+    const src = fromDiscount || d.business?.imageUrl || "";
+    const isExternal = /^https?:\/\//i.test(src);
 
   return (
     <div className="container-app py-6 space-y-6">

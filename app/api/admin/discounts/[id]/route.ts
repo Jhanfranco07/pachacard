@@ -19,21 +19,15 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 
   const existing = await prisma.discount.findUnique({ where: { id: params.id } });
-  if (!existing) {
-    return NextResponse.json({ ok: false, message: "No encontrado" }, { status: 404 });
-  }
+  if (!existing) return NextResponse.json({ ok: false, message: "No encontrado" }, { status: 404 });
 
   const b = await req.json();
 
   const code = String(b.code ?? "").trim().toUpperCase();
-  if (!code) {
-    return NextResponse.json({ ok: false, message: "El código es requerido." }, { status: 400 });
-  }
+  if (!code) return NextResponse.json({ ok: false, message: "El código es requerido." }, { status: 400 });
 
   const title = String(b.title ?? "").trim();
-  if (!title) {
-    return NextResponse.json({ ok: false, message: "El título es requerido." }, { status: 400 });
-  }
+  if (!title) return NextResponse.json({ ok: false, message: "El título es requerido." }, { status: 400 });
 
   const status = String(b.status ?? "DRAFT").trim().toUpperCase();
   const allowedStatus = new Set(["DRAFT", "PUBLISHED", "ARCHIVED"]);
@@ -61,32 +55,69 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json({ ok: false, message: "La fecha de inicio no puede ser mayor que la de fin." }, { status: 400 });
   }
 
+  // Acepta b.images o b.imageUrl
+  const images: string | null = (b.images ?? b.imageUrl ?? "").toString().trim() || null;
+
+  // Manejo del negocio via relación anidada
+  let businessNested: Prisma.DiscountUpdateInput["business"] | undefined;
   let businessId: string | null = null;
   if (b.businessId) {
-    const biz = await prisma.business.findUnique({ where: { id: String(b.businessId) } });
-    if (!biz) {
-      return NextResponse.json({ ok: false, message: "El negocio seleccionado no existe." }, { status: 400 });
-    }
+    const biz = await prisma.business.findUnique({
+      where: { id: String(b.businessId) },
+      select: { id: true },
+    });
+    if (!biz) return NextResponse.json({ ok: false, message: "El negocio seleccionado no existe." }, { status: 400 });
     businessId = biz.id;
+    businessNested = { connect: { id: biz.id } };
+  } else if (b.businessId === "" || b.businessId === null) {
+    // Si envías vacío, desconecta el negocio
+    businessNested = { disconnect: true };
   }
 
-  const data = {
-    code,
-    title,
-    description: String(b.description ?? ""),
-    status,
-    tierBasic: tb,
-    tierNormal: tn,
-    tierPremium: tp,
-    startAt,
-    endAt,
-    limitPerUser: toNumOrNull(b.limitPerUser),
-    limitTotal: toNumOrNull(b.limitTotal),
-    businessId,
-  };
+  const categoryIds: string[] = Array.isArray(b.categoryIds) ? b.categoryIds : [];
 
   try {
-    await prisma.discount.update({ where: { id: params.id }, data });
+    await prisma.$transaction(async (tx) => {
+      // Actualiza descuento
+      const disc = await tx.discount.update({
+        where: { id: params.id },
+        data: {
+          code,
+          title,
+          description: String(b.description ?? ""),
+          status,
+          tierBasic: tb,
+          tierNormal: tn,
+          tierPremium: tp,
+          startAt,
+          endAt,
+          limitPerUser: toNumOrNull(b.limitPerUser),
+          limitTotal: toNumOrNull(b.limitTotal),
+          images,
+          ...(businessNested ? { business: businessNested } : {}),
+        },
+      });
+
+      // Refresca categorías del descuento
+      await tx.discountCategory.deleteMany({ where: { discountId: disc.id } });
+      if (categoryIds.length) {
+        await tx.discountCategory.createMany({
+          data: categoryIds.map((categoryId) => ({ discountId: disc.id, categoryId })),
+        });
+
+        // Refresca/asegura categorías del negocio
+        if (businessId) {
+          for (const categoryId of categoryIds) {
+            await tx.businessCategory.upsert({
+              where: { businessId_categoryId: { businessId, categoryId } },
+              update: {},
+              create: { businessId, categoryId },
+            });
+          }
+        }
+      }
+    });
+
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     if ((e as Prisma.PrismaClientKnownRequestError)?.code === "P2002") {
