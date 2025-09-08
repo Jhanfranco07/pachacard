@@ -16,10 +16,50 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
+    "/admin/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/page.js"
+    ],
+    "/admin/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/layout.js"
+    ],
     "/(user)/app/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(user)/app/page.js"
+    ],
+    "/admin/businesses/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/businesses/page.js"
+    ],
+    "/admin/businesses/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/businesses/[id]/page.js"
+    ],
+    "/admin/discounts/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/discounts/page.js"
+    ],
+    "/admin/discounts/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/discounts/[id]/page.js"
+    ],
+    "/(user)/app/businesses/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(user)/app/businesses/page.js"
+    ],
+    "/(user)/app/businesses/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(user)/app/businesses/[id]/page.js"
     ]
   }
 }
