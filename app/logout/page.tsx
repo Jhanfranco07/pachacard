@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react";
 
 export default function LogoutPage() {
   useEffect(() => {
-    // NextAuth envía el CSRF por ti y hace el POST correcto
+
     signOut({ callbackUrl: "/login", redirect: true });
   }, []);
 
