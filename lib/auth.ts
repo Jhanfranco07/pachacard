@@ -1,5 +1,5 @@
-// lib/auth.ts
-import NextAuth, { NextAuthOptions } from "next-auth";
+// lib/auth.ts (NextAuth v5)
+import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -10,12 +10,7 @@ function normalizeTier(t: any): "BASIC" | "NORMAL" | "PREMIUM" {
   return "BASIC";
 }
 
-export const {
-  auth,
-  signIn,
-  signOut,
-  handlers: { GET, POST },
-} = NextAuth({
+export const authConfig: NextAuthConfig = {
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
   session: { strategy: "jwt" },
@@ -53,10 +48,9 @@ export const {
   pages: { signIn: "/login", error: "/login" },
 
   callbacks: {
-    // Guarda datos en el JWT
     async jwt({ token, user }) {
       if (user) {
-        // asegúrate de que el id quede en el token
+        // asegura id y campos extra en el JWT
         (token as any).sub = (user as any).id ?? (token as any).sub ?? null;
         (token as any).role = (user as any).role || "USER";
         (token as any).tier = normalizeTier((user as any).tier);
@@ -64,9 +58,7 @@ export const {
       return token;
     },
 
-    // Proyecta datos del JWT a la sesión (lo que lee tu app)
     async session({ session, token, user }) {
-      // inyecta el id en session.user.id (MUY importante para tus consultas)
       if (session.user) {
         (session.user as any).id =
           (token as any).sub ?? (user as any)?.id ?? null;
@@ -76,4 +68,7 @@ export const {
       return session;
     },
   },
-} as NextAuthOptions);
+};
+
+// v5: devuelve helpers y handlers
+export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth(authConfig);
