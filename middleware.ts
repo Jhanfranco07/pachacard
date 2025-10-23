@@ -1,36 +1,56 @@
 // middleware.ts
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+/**
+ * - Permite libremente: /login, /logout y /api/auth/*
+ * - Protege: /app/** y /admin/**
+ *   - Si no hay sesión → redirige a /login?callbackUrl=...
+ *   - Si entra a /admin y no es ADMIN → redirige a /app
+ */
 export async function middleware(req: NextRequest) {
-  const path = req.nextUrl.pathname;
+  const { pathname, search } = req.nextUrl;
 
-  const isPublic =
-    path === "/login" ||
-    path === "/logout" ||
-    path.startsWith("/api/auth") ||
-    path.startsWith("/redeem");
+  // Rutas públicas
+  if (
+    pathname === "/login" ||
+    pathname === "/logout" ||
+    pathname.startsWith("/api/auth")
+  ) {
+    return NextResponse.next();
+  }
 
-  // Solo protegemos /app y /admin
-  const needsAuth = path.startsWith("/app") || path.startsWith("/admin");
+  // Sólo interceptamos lo que declaramos en `matcher` (abajo), pero
+  // por claridad mantenemos estas comprobaciones.
+  const isPrivate = pathname.startsWith("/app") || pathname.startsWith("/admin");
+  if (!isPrivate) return NextResponse.next();
 
-  if (!isPublic && needsAuth) {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/login";
-      url.searchParams.set("callbackUrl", req.nextUrl.pathname + req.nextUrl.search);
-      return NextResponse.redirect(url);
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  // No autenticado → a login con callback
+  if (!token) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("callbackUrl", pathname + search);
+    return NextResponse.redirect(url);
+  }
+
+  // Admin guard
+  if (pathname.startsWith("/admin")) {
+    const role = (token as any).role ?? "USER";
+    if (role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/app", req.url));
     }
   }
 
   return NextResponse.next();
 }
 
-// ✅ Nada de RegExp complejas aquí
+/**
+ * Importante: usa globs, NO regex con grupos.
+ * Así evitamos el error de "Capturing groups are not allowed".
+ */
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icons|brand|uploads|api/auth).*)",
-  ],
+  matcher: ["/app/:path*", "/admin/:path*"],
 };
