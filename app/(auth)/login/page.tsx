@@ -3,7 +3,7 @@
 
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 /* Icons */
 function Eye(props: React.SVGProps<SVGSVGElement>) {
@@ -66,7 +66,8 @@ function BrandBackground() {
   );
 }
 
-export default function LoginPage() {
+/** Extrae los search params dentro de un árbol envuelto en <Suspense> */
+function LoginInner() {
   const search = useSearchParams();
   const errParam = search?.get("error");
   const shouldShowError =
@@ -227,12 +228,19 @@ export default function LoginPage() {
                   </ul>
                 </div>
 
-                {/* (Quité el pie local para evitar el duplicado del © si tu layout ya lo incluye) */}
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginInner />
+    </Suspense>
   );
 }

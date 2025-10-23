@@ -1,4 +1,8 @@
 // app/api/admin/redemptions/route.ts
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Papa from "papaparse";
@@ -9,6 +13,7 @@ import type {
   Business,
   Prisma,
 } from "@prisma/client";
+
 
 // Fila con includes tipados
 type Row = Redemption & {
